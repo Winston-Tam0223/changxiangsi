@@ -92,15 +92,18 @@ function tick(){
     const d = new Date(el.getAttribute('data-t'));
     const diff = d - Date.now();
     if(isNaN(d)){ el.textContent='时间无效'; return; }
-    if(diff<=0){ el.textContent='已开始 / 已结束'; return; }
-    const s=Math.floor(diff/1000), dd=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60), ss=s%60;
-    el.textContent = '剩余 '+dd+'天 '+h+'时 '+m+'分 '+ss+'秒';
+    if(diff<=0){ el.textContent='已开始'; return; }
+    const s=Math.floor(diff/1000), dd=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60);
+    el.textContent = '剩余 '+dd+'天 '+h+'时 '+m+'分';
   });
 }
 
 function fmt(iso){
   const d=new Date(iso); if(isNaN(d)) return '--';
-  return d.toLocaleString('zh-CN',{hour12:false});
+  // 统一按北京时间显示，格式：年月日 时:分（不含秒）
+  const bj=new Date(d.getTime()+8*3600*1000);
+  const p=n=>String(n).padStart(2,'0');
+  return `${bj.getUTCFullYear()}/${bj.getUTCMonth()+1}/${bj.getUTCDate()} ${p(bj.getUTCHours())}:${p(bj.getUTCMinutes())}`;
 }
 function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function logout(){

