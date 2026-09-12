@@ -230,11 +230,16 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.ht
 // 404 兜底：非 API 路径一律回登录页
 app.use('/api', (req, res) => res.status(404).json({ error: '接口不存在' }));
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log('==============================================');
-  console.log('  长相思匹配时间发布系统 v4.0（完整建站版）');
-  console.log(`  访问地址：http://localhost:${PORT}`);
-  console.log(`  管理员账号：${ADMIN_EMAIL}`);
-  console.log('==============================================');
-});
+module.exports = app;
+
+// 直接运行时才启动监听（Vercel 等无服务器平台由平台接管，只需导出 app）
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log('==============================================');
+    console.log('  长相思匹配时间发布系统 v4.0（完整建站版）');
+    console.log(`  访问地址：http://localhost:${PORT}`);
+    console.log(`  管理员账号：${ADMIN_EMAIL}`);
+    console.log('==============================================');
+  });
+}
