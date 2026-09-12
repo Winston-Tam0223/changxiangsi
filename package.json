@@ -1,0 +1,17 @@
+{
+  "name": "changxiangsi-countdown-system",
+  "version": "1.0.0",
+  "description": "长相思匹配时间发布系统（Supabase Auth + 云端数据库 + Render 免费部署）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}
