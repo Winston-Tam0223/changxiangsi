@@ -1,4 +1,8 @@
-# 长相思匹配时间发布系统 · 完整建站包（v4.0）
+
+
+## 在线访问
+- Vercel: https://changxiangsi.vercel.app
+- Render(备用): https://changxiangsi.onrender.com# 长相思匹配时间发布系统 · 完整建站包（v4.0）
 
 前端（5页）+ 后端（Node.js/Express）+ Supabase 云数据库与账号体系，全部免费，可部署到 Render 上线。
 
