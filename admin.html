@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>任务管理｜长相思匹配时间发布系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,"Segoe UI","PingFang SC",Roboto,sans-serif}
+body{background:linear-gradient(160deg,#e9f8ef 0%,#f6fcf8 55%,#edfaf2 100%);min-height:100vh;padding:24px 16px}
+.container{max-width:720px;margin:0 auto}
+.head{text-align:center;margin-bottom:22px}
+.head h1{color:#2a6b4e;font-size:26px}
+.head .sub{color:#6d9480;font-size:13.5px;margin-top:6px}
+.toolbar{text-align:center;margin-bottom:14px}
+.btn{display:inline-block;padding:11px 22px;border-radius:99px;border:none;background:linear-gradient(135deg,#56c98a,#34a76c);color:#fff;font-size:14.5px;font-weight:600;cursor:pointer;text-decoration:none;box-shadow:0 5px 15px rgba(74,179,122,0.22)}
+.btn.plain{background:#fff;color:#2a6b4e;border:1px solid #b8e0ca;box-shadow:none}
+.btn.danger{background:linear-gradient(135deg,#c98a7a,#a56350)}
+.btn.small{padding:5px 11px;font-size:12.5px;border-radius:8px;box-shadow:none}
+.card{background:rgba(255,255,255,0.85);backdrop-filter:blur(12px);border-radius:18px;padding:20px 22px;box-shadow:0 4px 16px rgba(84,168,125,0.12);border:1px solid rgba(120,190,152,0.28);margin-bottom:14px;position:relative}
+.f-label{display:block;color:#4c8068;font-size:13.5px;margin:8px 0 6px}
+.f-input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #b8e0ca;background:#fff;font-size:16px;outline:none;color-scheme:light;color:#234a38}
+.f-input:focus{border-color:#5fc98a;box-shadow:0 0 0 3px rgba(95,201,138,0.15)}
+.del-pos{position:absolute;top:14px;right:14px}
+.save-row{text-align:center;margin-top:8px}
+.nav-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:26px}
+.toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);background:#2a6b4e;color:#fff;padding:11px 22px;border-radius:99px;font-size:14px;box-shadow:0 6px 20px rgba(42,107,78,0.35);display:none;z-index:1001}
+.toast.show{display:block}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="head"><h1>任务时间设置</h1><div class="sub">按北京时间设置，访问者自动换算各自本地时区</div></div>
+  <div class="toolbar"><button class="btn" onclick="addTask()">添加新任务</button></div>
+  <div id="formWrap"></div>
+  <div class="save-row"><button class="btn" onclick="saveAll()">保存全部修改</button></div>
+  <div class="nav-row"><a class="btn plain" href="./index.html">返回首页</a><button class="btn danger" onclick="logout()">退出登录</button></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let token = localStorage.getItem('sb_token');
+if(!token){ window.location.href='./login.html'; }
+let tasks = [];
+let editing = false;
+
+async function loadTasks(){
+  const res = await fetch('/api/tasks',{headers:{Authorization:'Bearer '+token}});
+  if(!res.ok){ logout(); return; }
+  tasks = await res.json();
+  render();
+}
+function render(){
+  const wrap = document.getElementById('formWrap');
+  if(!tasks.length){ wrap.innerHTML='<div class="empty" style="text-align:center;color:#88a896;padding:24px">暂无任务</div>'; return; }
+  wrap.innerHTML = tasks.map((t,i)=>`
+    <div class="card">
+      <button class="btn danger small del-pos" onclick="delTask(${t.id})">删除</button>
+      <div class="f-label">任务名称</div>
+      <input class="f-input" value="${esc(t.name)}" id="nm_${i}">
+      <div class="f-label">目标北京时间（可滑动选择年月日时分）</div>
+      <input class="f-input" type="datetime-local" value="${toLocalInput(t.target_beijing_time)}" id="tm_${i}">
+      <div style="text-align:right;margin-top:10px"><button class="btn small" onclick="saveOne(${i})">保存此任务</button></div>
+    </div>`).join('');
+}
+function addTask(){
+  tasks.push({name:'新任务', target_beijing_time:''});
+  render();
+}
+async function delTask(id){
+  if(!confirm('确认删除该任务？')) return;
+  const res = await fetch('/api/task/'+id,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+  if(res.ok){ toast('已删除'); loadTasks(); }
+}
+async function saveAll(){
+  editing = true;
+  const list = tasks.map((t,i)=>{
+    const nm = document.getElementById('nm_'+i).value.trim();
+    const tm = document.getElementById('tm_'+i).value;
+    const item = {name:nm, targetBeijingTime: tm ? tm+':00+08:00' : ''};
+    if(t.id) item.id = t.id;
+    return item;
+  });
+  if(list.some(x=>!x.name || !x.targetBeijingTime)){ toast('任务名称和时间不能为空'); editing=false; return; }
+  const res = await fetch('/api/tasks',{
+    method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+    body:JSON.stringify(list)
+  });
+  editing = false;
+  if(res.ok){ toast('保存成功！'); loadTasks(); } else { toast('保存失败'); }
+}
+async function saveOne(i){
+  const t = tasks[i];
+  const nm = document.getElementById('nm_'+i).value.trim();
+  const tm = document.getElementById('tm_'+i).value;
+  if(!nm || !tm){ toast('任务名称和时间不能为空'); return; }
+  const body = { name: nm, targetBeijingTime: tm+':00+08:00' };
+  if(t.id) body.id = t.id;
+  const res = await fetch('/api/task',{
+    method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  if(res.ok){ toast('已保存：'+nm); loadTasks(); } else { toast('保存失败'); }
+}
+function toLocalInput(iso){
+  if(!iso) return '';
+  const d=new Date(iso); if(isNaN(d)) return '';
+  // 统一按北京时间（UTC+8）显示与编辑
+  const bj = new Date(d.getTime() + 8*3600*1000);
+  const p=n=>String(n).padStart(2,'0');
+  return `${bj.getUTCFullYear()}-${p(bj.getUTCMonth()+1)}-${p(bj.getUTCDate())}T${p(bj.getUTCHours())}:${p(bj.getUTCMinutes())}`;
+}
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(t){ const el=document.getElementById('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2200); }
+function logout(){ localStorage.removeItem('sb_token');window.location.href='./login.html'; }
+loadTasks();
+</script>
+</body>
+</html>

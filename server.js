@@ -153,6 +153,21 @@ app.delete('/api/task/:id', authMiddleware, async (req, res) => {
   res.json({ ok: true });
 });
 
+// 保存单个任务（仅新增/更新该任务，不影响其他任务）
+app.post('/api/task', authMiddleware, async (req, res) => {
+  if (!isAdmin(req.user)) return res.status(403).json({ error: '无权限' });
+  const { id, name, targetBeijingTime } = req.body || {};
+  if (!name || !targetBeijingTime) return res.status(400).json({ error: '任务名称和时间不能为空' });
+  if (id) {
+    const { error } = await supabaseAdmin.from('tasks').update({ name, target_beijing_time: targetBeijingTime }).eq('id', id);
+    if (error) return res.status(500).json({ error: error.message });
+  } else {
+    const { error } = await supabaseAdmin.from('tasks').insert({ name, target_beijing_time: targetBeijingTime });
+    if (error) return res.status(500).json({ error: error.message });
+  }
+  res.json({ ok: true });
+});
+
 // ============ 用户管理接口（仅管理员） ============
 
 app.get('/api/all-users', authMiddleware, async (req, res) => {
