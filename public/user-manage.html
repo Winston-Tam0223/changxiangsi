@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>用户账号管理｜长相思匹配时间发布系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,"Segoe UI","PingFang SC",Roboto,sans-serif}
+body{background:linear-gradient(160deg,#e9f8ef 0%,#f6fcf8 55%,#edfaf2 100%);min-height:100vh;padding:24px 16px}
+.container{max-width:900px;margin:0 auto}
+.head{text-align:center;margin-bottom:22px}
+.head h1{color:#2a6b4e;font-size:26px}
+.head .sub{color:#6d9480;font-size:13.5px;margin-top:6px}
+.card{background:rgba(255,255,255,0.85);backdrop-filter:blur(12px);border-radius:18px;padding:20px 22px;box-shadow:0 4px 16px rgba(84,168,125,0.12);border:1px solid rgba(120,190,152,0.28);margin-bottom:16px}
+.f-label{display:block;color:#4c8068;font-size:13.5px;margin:8px 0 6px}
+.f-input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #b8e0ca;background:#fff;font-size:16px;outline:none;color:#234a38}
+.f-input:focus{border-color:#5fc98a;box-shadow:0 0 0 3px rgba(95,201,138,0.15)}
+.btn{display:inline-block;padding:11px 22px;border-radius:99px;border:none;background:linear-gradient(135deg,#56c98a,#34a76c);color:#fff;font-size:14.5px;font-weight:600;cursor:pointer;text-decoration:none;box-shadow:0 5px 15px rgba(74,179,122,0.22)}
+.btn.plain{background:#fff;color:#2a6b4e;border:1px solid #b8e0ca;box-shadow:none}
+.btn.danger{background:linear-gradient(135deg,#c98a7a,#a56350)}
+.btn.small{padding:5px 10px;font-size:12.5px;border-radius:8px;box-shadow:none}
+.table-wrap{background:#fff;border-radius:14px;overflow:auto;box-shadow:0 3px 12px rgba(84,168,125,0.1)}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th,td{padding:11px 10px;text-align:left;border-bottom:1px solid #e2f3e9;font-size:13.5px;white-space:nowrap}
+th{background:#eef9f2;color:#2a6b4e}
+tr:hover td{background:#f4fcf7}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600}
+.badge.on{background:#e3f7ea;color:#1f9d5d}
+.badge.off{background:#fdecea;color:#c0392b}
+.badge.admin{background:#e9f2ff;color:#2a6b4e}
+.nav-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:26px}
+.toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);background:#2a6b4e;color:#fff;padding:11px 22px;border-radius:99px;font-size:14px;box-shadow:0 6px 20px rgba(42,107,78,0.35);display:none;z-index:1001}
+.toast.show{display:block}
+.vt-mask{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.vt-mask.show{display:flex}
+.vt-box{background:#fff;border-radius:18px;padding:24px 26px;max-width:460px;width:100%;max-height:80vh;overflow:auto;box-shadow:0 10px 40px rgba(42,107,78,0.3)}
+.vt-box h3{color:#2a6b4e;font-size:17px;margin-bottom:14px}
+.vt-item{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid #e2f3e9;border-radius:10px;margin-bottom:8px;cursor:pointer;font-size:14px;color:#234a38}
+.vt-item:hover{background:#f4fcf7}
+.vt-item input{accent-color:#34a76c;width:16px;height:16px}
+.vt-hint{color:#88a896;font-size:12.5px;margin:10px 0 14px}
+.vt-actions{display:flex;gap:10px;justify-content:center;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="head"><h1>用户账号管理</h1><div class="sub">仅管理员可添加 / 禁用 / 启用 / 删除账号，并可重置密码</div></div>
+
+  <div class="card">
+    <div class="f-label">新增登录账号（用户不能自助注册）</div>
+    <input class="f-input" id="newEmail" placeholder="用户邮箱，如 user@example.com" autocomplete="off">
+    <input class="f-input" id="newPwd" placeholder="初始登录密码（至少6位）" style="margin-top:10px">
+    <div style="text-align:center;margin-top:16px"><button class="btn" onclick="createUser()">创建账号</button></div>
+  </div>
+
+  <div class="card">
+    <div class="f-label">全部账号列表</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>邮箱账号</th><th>角色</th><th>状态</th><th>可见任务</th><th>操作</th><th>创建时间</th></tr></thead>
+      <tbody id="userBody"></tbody>
+    </table></div>
+  </div>
+
+  <div class="nav-row"><a class="btn plain" href="./index.html">返回首页</a><button class="btn danger" onclick="logout()">退出登录</button></div>
+</div>
+
+<div class="vt-mask" id="vtMask">
+  <div class="vt-box">
+    <h3>设置可见任务：<span id="vtEmail" style="font-weight:700"></span></h3>
+    <div id="vtList"></div>
+    <div class="vt-hint">勾选该用户登录后能看到的任务；<b>不勾选任何任务 = 可看到全部任务</b>。管理员始终可见全部任务。</div>
+    <div class="vt-actions">
+      <button class="btn" onclick="saveVt()">保存</button>
+      <button class="btn plain" onclick="closeVt()">取消</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let token = localStorage.getItem('sb_token');
+if(!token){ window.location.href='./login.html'; }
+let users = [];
+let tasks = [];
+let curVtUserId = null;
+const ADMIN_EMAIL = '1757349561@qq.com';
+
+async function loadUsers(){
+  const res = await fetch('/api/all-users',{headers:{Authorization:'Bearer '+token}});
+  if(res.status===403){ alert('无权限'); window.location.href='./index.html'; return; }
+  if(!res.ok){ logout(); return; }
+  users = await res.json();
+  render();
+}
+async function loadTasks(){
+  try{
+    const res = await fetch('/api/tasks',{headers:{Authorization:'Bearer '+token}});
+    if(res.ok){ tasks = await res.json(); render(); }
+  }catch(e){}
+}
+function taskName(id){ const t = tasks.find(x=>String(x.id)===String(id)); return t ? t.name : null; }
+function visibleLabel(u){
+  const meta = u.user_metadata || {};
+  if(u.email===ADMIN_EMAIL || meta.isAdmin) return '<span style="color:#2a6b4e">全部</span>';
+  const vt = meta.visible_tasks;
+  if(!Array.isArray(vt) || !vt.length) return '<span style="color:#88a896">全部</span>';
+  const names = vt.map(id=>taskName(id)).filter(Boolean);
+  return '<span title="'+esc(vt.join(', '))+'">'+esc(names.join('、')||'已删除任务')+'</span>';
+}
+function render(){
+  const body = document.getElementById('userBody');
+  if(!users.length){ body.innerHTML='<tr><td colspan="6" style="text-align:center;color:#88a896;padding:24px">暂无账号</td></tr>'; return; }
+  body.innerHTML = users.map(u=>{
+    const meta = u.user_metadata || {};
+    const role = u.email===ADMIN_EMAIL || meta.isAdmin ? '<span class="badge admin">管理员</span>' : '<span class="badge on">普通</span>';
+    const st = meta.status==='disabled' ? '<span class="badge off">已禁用</span>' : '<span class="badge on">正常</span>';
+    let ops;
+    if(u.email===ADMIN_EMAIL){
+      ops = '<span style="color:#b6c9bf;font-size:12.5px">不可操作</span>';
+    }else{
+      ops = `
+        <button class="btn small plain" onclick="openVt('${u.id}','${esc(u.email)}')">设置可见任务</button>
+        <button class="btn small plain" onclick="resetPwd('${u.id}')">重置密码</button>
+        ${meta.status==='disabled'
+          ? `<button class="btn small" onclick="setStatus('${u.id}','active')">启用</button>`
+          : `<button class="btn small danger" onclick="setStatus('${u.id}','disabled')">禁用</button>`}
+        <button class="btn small danger" onclick="delUser('${u.id}')">删除</button>`;
+    }
+    return `<tr>
+      <td>${esc(u.email)}</td><td>${role}</td><td>${st}</td><td>${visibleLabel(u)}</td><td>${ops}</td>
+      <td>${new Date(u.created_at).toLocaleString('zh-CN',{hour12:false})}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openVt(uid, email){
+  curVtUserId = uid;
+  document.getElementById('vtEmail').textContent = email;
+  const u = users.find(x=>x.id===uid);
+  const cur = new Set(((u?.user_metadata||{}).visible_tasks||[]).map(String));
+  const list = document.getElementById('vtList');
+  if(!tasks.length){ list.innerHTML = '<div style="color:#88a896;padding:10px">暂无任务</div>'; }
+  else{
+    list.innerHTML = tasks.map(t=>`
+      <label class="vt-item"><input type="checkbox" value="${t.id}" ${cur.has(String(t.id))?'checked':''}> ${esc(t.name)}</label>
+    `).join('');
+  }
+  document.getElementById('vtMask').classList.add('show');
+}
+function closeVt(){ document.getElementById('vtMask').classList.remove('show'); curVtUserId=null; }
+async function saveVt(){
+  if(!curVtUserId) return;
+  const ids = [...document.querySelectorAll('#vtList input:checked')].map(i=>i.value);
+  const res = await fetch('/api/set-user-tasks',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({userId:curVtUserId, taskIds: ids})});
+  if(!res.ok){ const d = await res.json().catch(()=>({})); toast(d.error||'保存失败'); return; }
+  toast('可见任务已保存');
+  closeVt();
+  loadUsers();
+}
+
+async function createUser(){
+  const email = document.getElementById('newEmail').value.trim();
+  const pwd = document.getElementById('newPwd').value.trim();
+  if(!email || !pwd){ toast('邮箱和密码不能为空'); return; }
+  if(users.some(u=>u.email===email)){ toast('该邮箱已存在'); return; }
+  const res = await fetch('/api/create-user',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({email,password:pwd})});
+  const data = await res.json();
+  if(!res.ok){ toast(data.error||'创建失败'); return; }
+  toast('账号创建成功，用户可登录');
+  document.getElementById('newEmail').value=''; document.getElementById('newPwd').value='';
+  loadUsers();
+}
+async function setStatus(uid,status){
+  if(!confirm(status==='disabled'?'确认禁用该账号？禁用后无法登录':'确认启用该账号？')) return;
+  const res = await fetch('/api/set-user-status',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({userId:uid,status})});
+  if(!res.ok){ toast('操作失败'); return; }
+  toast(status==='disabled'?'已禁用该账号':'已启用该账号');
+  loadUsers();
+}
+async function delUser(uid){
+  if(!confirm('确认永久删除该账号？删除后无法恢复')) return;
+  const res = await fetch('/api/user/'+uid,{method:'DELETE',headers:{Authorization:'Bearer '+token}});
+  if(!res.ok){ toast('删除失败'); return; }
+  toast('账号已删除');
+  loadUsers();
+}
+function resetPwd(uid){
+  const np = prompt('请输入该用户的新密码（至少6位）');
+  if(!np) return;
+  if(!confirm('确认重置该用户密码？')) return;
+  (async()=>{
+    const res = await fetch('/api/reset-pwd',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({userId:uid,newPwd:np})});
+    const data = await res.json();
+    if(!res.ok){ toast(data.error||'重置失败'); return; }
+    toast('密码重置成功');
+    loadUsers();
+  })();
+}
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(t){ const el=document.getElementById('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2200); }
+function logout(){ localStorage.removeItem('sb_token');window.location.href='./login.html'; }
+loadUsers();
+loadTasks();
+</script>
+</body>
+</html>
