@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>用户账号管理｜长相思匹配时间发布系统</title>
-  <link rel="stylesheet" href="./ui.css">
+<title>用户账号管理｜长相思联盟匹配时间</title>
+  <link rel="stylesheet" href="./ui.css?v=4">
 </head>
 <body>
 <div class="lang-bar">
@@ -207,6 +207,6 @@ function resetPwd(uid){
 function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2200); }
 </script>
-  <script src="./ui.js"></script>
+  <script src="./ui.js?v=4"></script>
 </body>
 </html>
