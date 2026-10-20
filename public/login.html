@@ -39,6 +39,7 @@
     <a class="entry" href="./index.html"><div class="ico">⚡</div><span data-i18n="timePublish">时间发布</span></a>
     <a class="entry" href="javascript:void(0)" onclick="alert(t('smartSystem'))"><div class="ico">⭐</div><span data-i18n="smartSystem">智能系统</span></a>
   </div>
+  <div class="leak-warn"><span class="leak-ico">🚫</span><span data-i18n="leakWarn">请勿泄露内部网站与匹配时间 违规必究</span></div>
 </div>
 
 <div class="welcome-mask" id="welcomeMask">
@@ -126,9 +127,18 @@ async function doLogin(e){
     const name = data.user.name || data.user.email;
     document.getElementById('welcomeText').textContent = t('loginSuccessWelcome', {name});
     document.getElementById('welcomeTip').textContent = t('loginSuccessTip');
-    document.getElementById('welcomeSub').textContent = t('enterHomeIn');
+    const subEl = document.getElementById('welcomeSub');
     document.getElementById('welcomeMask').classList.add('show');
-    setTimeout(()=>{ window.location.href='./index.html'; }, 3000);
+    /* 文字式倒计时：3秒后自动进入首页 → 2秒 → 1秒 → 进入首页 */
+    const baseTxt = t('enterHomeIn');
+    const hasNum = /\d/.test(baseTxt);
+    let cd = 3;
+    subEl.textContent = hasNum ? baseTxt.replace(/\d+/, cd) : baseTxt;
+    const cdTimer = setInterval(()=>{
+      cd--;
+      if(cd <= 0){ clearInterval(cdTimer); window.location.href='./index.html'; }
+      else { subEl.textContent = hasNum ? baseTxt.replace(/\d+/, cd) : cd + baseTxt; }
+    }, 1000);
   }catch(err){
     msg.textContent = t('errConn');
   }
