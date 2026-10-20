@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>任务管理｜长相思联盟匹配时间</title>
+  <link rel="stylesheet" href="./ui.css">
+</head>
+<body>
+<div class="lang-bar">
+  <button type="button" id="langBtn" class="lang-btn" title="Language">🌐</button>
+  <div class="lang-menu" id="langMenu">
+    <div class="lang-opt" data-lang="zh-CN">简体中文</div>
+    <div class="lang-opt" data-lang="zh-TW">繁體中文</div>
+    <div class="lang-opt" data-lang="en">English</div>
+  </div>
+</div>
+<div class="container">
+  <div class="head"><h1 data-i18n="adminPanel">管理员后台</h1><div class="sub" data-i18n="adminSub">按北京时间设置，访问者自动换算各自本地时区</div></div>
+  <div class="toolbar"><button class="btn" onclick="addTask()" data-i18n="addTask">添加新任务</button></div>
+  <div id="formWrap"></div>
+  <div class="save-row"><button class="btn" onclick="saveAll()" data-i18n="saveAll">保存全部修改</button></div>
+  <div class="nav-row"><a class="btn plain" href="./index.html" data-i18n="backHome">返回首页</a><button class="btn danger" onclick="logout()" data-i18n="logout">退出登录</button></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="./auth.js"></script>
+<script src="./i18n.js"></script>
+<script>
+let token = null;
+(async function init(){ token = await ensureToken(); if(token) loadTasks(); })();
+let tasks = [];
+let editing = false;
+
+async function loadTasks(){
+  const res = await authFetch('/api/tasks');
+  if(!res.ok){ logout(); return; }
+  tasks = await res.json();
+  render();
+}
+function render(){
+  const wrap = document.getElementById('formWrap');
+  if(!tasks.length){ wrap.innerHTML='<div class="empty" style="text-align:center;color:#8fb0a0;padding:24px">'+t('noTasks')+'</div>'; return; }
+  wrap.innerHTML = tasks.map((t2,i)=>`
+    <div class="card">
+      <button class="btn danger small del-pos" onclick="delTask(${t2.id})">${t('delete')}</button>
+      <div class="f-label">${t('taskNameLabel')}</div>
+      <input class="f-input" value="${esc(t2.name)}" id="nm_${i}">
+      <div class="f-label">${t('targetBjTime')}</div>
+      <input class="f-input" type="datetime-local" value="${toLocalInput(t2.target_beijing_time)}" id="tm_${i}">
+      <div style="text-align:right;margin-top:10px"><button class="btn small" onclick="saveOne(${i})">${t('saveThisTask')}</button></div>
+    </div>`).join('');
+}
+function addTask(){
+  tasks.push({name:'', target_beijing_time:''});
+  render();
+}
+async function delTask(id){
+  if(!confirm(t('confirmDelTask'))) return;
+  const res = await authFetch('/api/task/'+id,{method:'DELETE'});
+  if(res.ok){ toast(t('deleted')); loadTasks(); }
+}
+async function saveAll(){
+  editing = true;
+  const list = tasks.map((t2,i)=>{
+    const nm = document.getElementById('nm_'+i).value.trim();
+    const tm = document.getElementById('tm_'+i).value;
+    const item = {name:nm, targetBeijingTime: tm ? tm+':00+08:00' : ''};
+    if(t2.id) item.id = t2.id;
+    return item;
+  });
+  if(list.some(x=>!x.name || !x.targetBeijingTime)){ toast(t('nameTimeRequired')); editing=false; return; }
+  const res = await authFetch('/api/tasks',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(list)
+  });
+  editing = false;
+  if(res.ok){ toast(t('savedOk')); setTimeout(()=>{ window.location.href='./index.html'; }, 500); } else { toast(t('savedFail')); }
+}
+async function saveOne(i){
+  const t2 = tasks[i];
+  const nm = document.getElementById('nm_'+i).value.trim();
+  const tm = document.getElementById('tm_'+i).value;
+  if(!nm || !tm){ toast(t('nameTimeRequired')); return; }
+  const body = { name: nm, targetBeijingTime: tm+':00+08:00' };
+  if(t2.id) body.id = t2.id;
+  const res = await authFetch('/api/task',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  if(res.ok){ toast(t('saved')+'：'+nm); setTimeout(()=>{ window.location.href='./index.html'; }, 500); } else { toast(t('savedFail')); }
+}
+function toLocalInput(iso){
+  if(!iso) return '';
+  const d=new Date(iso); if(isNaN(d)) return '';
+  // 统一按北京时间（UTC+8）显示与编辑
+  const bj = new Date(d.getTime() + 8*3600*1000);
+  const p=n=>String(n).padStart(2,'0');
+  return `${bj.getUTCFullYear()}-${p(bj.getUTCMonth()+1)}-${p(bj.getUTCDate())}T${p(bj.getUTCHours())}:${p(bj.getUTCMinutes())}`;
+}
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2200); }
+</script>
+  <script src="./ui.js"></script>
+</body>
+</html>
