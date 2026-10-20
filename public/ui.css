@@ -68,7 +68,7 @@ body::after{
 .wrap{max-width:430px;width:100%;margin:0 auto;position:relative;z-index:1}
 body{display:flex;align-items:center;justify-content:center;padding:28px 16px}
 /* 登录页：内容自然高度+整屏垂直居中（任何手机都一屏全显，不依赖 svh/dvh） */
-body.login-page{padding:0;align-items:flex-start;justify-content:flex-start}
+body.login-page{padding:0;align-items:center}
 body.login-page .wrap{display:flex;flex-direction:column;gap:20px;padding:24px 16px;margin:0 auto;width:100%}
 
 /* ===== 语言切换 ===== */
@@ -310,7 +310,7 @@ html.js .reveal.in{opacity:1;transform:none}
 }
 /* ===== 登录页：移动端一屏全显（不滚动）===== */
 @media (max-width:640px){
-  body.login-page .wrap{padding:10px 16px;gap:12px}
+  body.login-page .wrap{padding:14px 20px;gap:14px}
   body.login-page .logo{margin-bottom:14px}
   body.login-page .logo .brand-icon{width:84px;height:84px;margin-bottom:12px;border-radius:20px}
   body.login-page .logo h1{font-size:28px;letter-spacing:1.5px}
@@ -323,7 +323,7 @@ html.js .reveal.in{opacity:1;transform:none}
   body.login-page .opt-row{margin-bottom:10px}
   body.login-page .login-btn{padding:11px;font-size:15px}
   body.login-page .login-msg{min-height:15px;font-size:12.5px;margin:8px 0 2px}
-  body.login-page .entry-row{gap:24px;margin-top:0}
+  body.login-page .entry-row{gap:0;margin-top:0;justify-content:space-between;width:100%}
   body.login-page .entry .ico{width:42px;height:42px;font-size:19px}
   body.login-page .entry{font-size:11.5px;gap:5px}
 }
