@@ -63,7 +63,7 @@ body::after{
 #fx-bg{position:fixed;inset:0;z-index:-1;pointer-events:none}
 
 /* 容器 */
-.container{max-width:760px;margin:0 auto;position:relative;z-index:1}
+.container{max-width:760px;margin:0 auto;position:relative;z-index:1;width:100%}
 .container.wide{max-width:1020px}
 .wrap{max-width:430px;width:100%;margin:0 auto;position:relative;z-index:1}
 body{display:flex;align-items:center;justify-content:center;padding:28px 16px}
