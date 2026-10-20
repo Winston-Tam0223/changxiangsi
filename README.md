@@ -87,4 +87,4 @@ Supabase 后台 → Authentication → Users → Add user
 - 登录日志里「输入密码」为明文，仅用于内部审计，请勿对非信任环境公开
 
 
-deploy-trigger-4
+deploy-trigger-5
