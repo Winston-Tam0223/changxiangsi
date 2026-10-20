@@ -327,6 +327,10 @@ html.js .reveal.in{opacity:1;transform:none}
   body.login-page .entry .ico{width:42px;height:42px;font-size:19px}
   body.login-page .entry{font-size:11.5px;gap:5px}
 }
+#welcomeSub{font-size:17px;color:var(--text-hi);margin-top:16px;letter-spacing:.5px;font-variant-numeric:tabular-nums}
+/* 登录页底部禁止图标 */
+.leak-warn{margin-top:4px;text-align:center}
+.leak-warn .leak-ico{font-size:18px;line-height:1;opacity:.85}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
