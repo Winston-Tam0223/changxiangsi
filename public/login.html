@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录｜长相思联盟匹配时间发布系统</title>
+  <link rel="stylesheet" href="./ui.css">
+</head>
+<body class="login-page">
+<div class="lang-bar">
+  <button type="button" id="langBtn" class="lang-btn" title="Language">🌐</button>
+  <div class="lang-menu" id="langMenu">
+    <div class="lang-opt" data-lang="zh-CN">简体中文</div>
+    <div class="lang-opt" data-lang="zh-TW">繁體中文</div>
+    <div class="lang-opt" data-lang="en">English</div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="logo">
+    <div class="brand-icon"><img src="./logo.jpg" alt="长相思联盟"></div>
+    <h1 data-i18n="brand">长相思联盟</h1>
+    <div class="welcome" data-i18n="welcomeBack">欢迎回来</div>
+    <div class="sub" data-i18n="loginSub">登录 长相思联盟匹配时间发布系统</div>
+  </div>
+  <div class="login-card">
+    <div class="login-msg" id="loginMsg"></div>
+    <form onsubmit="return doLogin(event)">
+      <div class="field"><label data-i18n="email">邮箱地址</label><input id="email" data-i18n="emailPh" placeholder="输入账号邮箱" autocomplete="off"></div>
+      <div class="field"><label data-i18n="password">密码</label><input id="pwd" data-i18n="pwdPh" type="password" placeholder="输入密码"></div>
+      <div class="opt-row">
+        <label><input type="checkbox" id="rememberMe"> <span data-i18n="rememberMeShort">记住我</span></label>
+        <button type="button" class="forgot" id="forgotPwd" onclick="showForgotTip()" data-i18n="forgotPwd">忘记密码？</button>
+      </div>
+      <button class="login-btn" data-i18n="loginBtn">登 录</button>
+    </form>
+  </div>
+  <div class="entry-row">
+    <a class="entry" href="javascript:void(0)" onclick="alert(t('secureLogin'))"><div class="ico">🔐</div><span data-i18n="secureLogin">安全登录</span></a>
+    <a class="entry" href="./index.html"><div class="ico">⚡</div><span data-i18n="timePublish">时间发布</span></a>
+    <a class="entry" href="javascript:void(0)" onclick="alert(t('smartSystem'))"><div class="ico">⭐</div><span data-i18n="smartSystem">智能系统</span></a>
+  </div>
+</div>
+
+<div class="welcome-mask" id="welcomeMask">
+  <div class="welcome-box"><div class="big">👋</div><p id="welcomeText"></p><p class="welcome-tip" id="welcomeTip"></p><span id="welcomeSub"></span></div>
+</div>
+
+<script src="./auth.js"></script>
+<script src="./i18n.js"></script>
+<script>
+/* 手机端打开不自动弹键盘：加载完成后收回焦点，用户点击输入框才弹出 */
+(function(){
+  function noAutoFocus(){
+    var a = document.activeElement;
+    if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) a.blur();
+  }
+  if (document.readyState === 'complete') { noAutoFocus(); }
+  else { window.addEventListener('load', noAutoFocus); }
+  setTimeout(noAutoFocus, 800);
+})();
+</script>
+<script>
+// 已保存的账号密码自动填充（即使退出登录后仍保留，无需重新输入）
+const savedEmail = localStorage.getItem('sb_saved_email');
+const savedPwd = localStorage.getItem('sb_saved_pwd');
+if(savedEmail){
+  try{ document.getElementById('email').value = decodeURIComponent(escape(atob(savedEmail))); }catch(e){}
+}
+if(savedPwd){
+  try{ document.getElementById('pwd').value = decodeURIComponent(escape(atob(savedPwd))); }catch(e){}
+}
+// 勾选状态：保存过账号则默认勾选
+document.getElementById('rememberMe').checked = savedEmail ? true : getRemember();
+
+// 已登录且会话有效则直接进入首页（token 失效时自动刷新，无需重新登录）
+(async function(){
+  const tt = await ensureToken();
+  if(tt){ window.location.href='./index.html'; }
+})();
+
+function showForgotTip(){
+  alert(t('forgotPwdTip'));
+}
+
+async function doLogin(e){
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim();
+  const pwd = document.getElementById('pwd').value.trim();
+  const remember = document.getElementById('rememberMe').checked;
+  const msg = document.getElementById('loginMsg');
+  if(!email || !pwd){ msg.textContent = t('emailPwdRequired'); return; }
+  msg.textContent = t('login') + '...';
+  try{
+    const res = await fetch('/api/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email,password:pwd})
+    });
+    const data = await res.json();
+    if(!res.ok){
+      const errMap = {'账号或密码错误': t('errBadCred'), '该账号已被管理员禁止登录': t('errDisabled')};
+      msg.textContent = errMap[data.error] || data.error || t('loginFailed');
+      return;
+    }
+    // 记住我：勾选=保存账号密码+长期自动登录；未勾选=仅本次会话
+    saveAuth(data.token, data.refresh_token, remember);
+    saveUserInfo(data.user.email, data.user.isAdmin);
+    if(remember){
+      // 保存账号和密码（base64 编码存储），退出登录后仍保留，下次打开自动填充
+      localStorage.setItem('sb_saved_email', btoa(unescape(encodeURIComponent(email))));
+      localStorage.setItem('sb_saved_pwd', btoa(unescape(encodeURIComponent(pwd))));
+      localStorage.setItem('sb_remembered_email', email);
+    }else{
+      localStorage.removeItem('sb_saved_email');
+      localStorage.removeItem('sb_saved_pwd');
+      localStorage.removeItem('sb_remembered_email');
+    }
+    const name = data.user.name || data.user.email;
+    document.getElementById('welcomeText').textContent = t('loginSuccessWelcome', {name});
+    document.getElementById('welcomeTip').textContent = t('loginSuccessTip');
+    document.getElementById('welcomeSub').textContent = t('enterHomeIn');
+    document.getElementById('welcomeMask').classList.add('show');
+    setTimeout(()=>{ window.location.href='./index.html'; }, 3000);
+  }catch(err){
+    msg.textContent = t('errConn');
+  }
+}
+</script>
+  <script src="./ui.js"></script>
+</body>
+</html>
