@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录日志｜长相思匹配时间发布系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,"Segoe UI","PingFang SC",Roboto,sans-serif}
+body{background:linear-gradient(160deg,#e9f8ef 0%,#f6fcf8 55%,#edfaf2 100%);min-height:100vh;padding:24px 16px}
+.lang-bar{position:fixed;top:18px;right:18px;z-index:10}
+.lang-bar select{padding:7px 12px;border-radius:99px;border:1px solid #b8e0ca;background:rgba(255,255,255,0.9);color:#2a6b4e;font-size:13px;outline:none;cursor:pointer}
+.container{max-width:1000px;margin:0 auto}
+.head{text-align:center;margin-bottom:20px}
+.head h1{color:#2a6b4e;font-size:26px}
+.head .sub{color:#6d9480;font-size:13.5px;margin-top:6px}
+.toolbar{text-align:right;margin-bottom:12px}
+.btn{display:inline-block;padding:10px 20px;border-radius:99px;border:none;background:linear-gradient(135deg,#56c98a,#34a76c);color:#fff;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;box-shadow:0 5px 15px rgba(74,179,122,0.22)}
+.btn.plain{background:#fff;color:#2a6b4e;border:1px solid #b8e0ca;box-shadow:none}
+.btn.danger{background:linear-gradient(135deg,#c98a7a,#a56350)}
+.table-wrap{background:#fff;border-radius:14px;overflow:auto;box-shadow:0 3px 12px rgba(84,168,125,0.1)}
+table{width:100%;border-collapse:collapse;min-width:820px}
+th,td{padding:11px 10px;text-align:left;border-bottom:1px solid #e2f3e9;font-size:13.5px;white-space:nowrap}
+th{background:#eef9f2;color:#2a6b4e}
+tr:hover td{background:#f4fcf7}
+.ok{color:#1f9d5d;font-weight:700}
+.fail{color:#c0392b;font-weight:700}
+.nav-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:26px}
+.empty{text-align:center;color:#88a896;padding:30px}
+</style>
+</head>
+<body>
+<div class="lang-bar">
+  <select id="langSelect" aria-label="language">
+    <option value="zh-CN">简体中文</option>
+    <option value="zh-TW">繁體中文</option>
+    <option value="en">English</option>
+  </select>
+</div>
+<div class="container">
+  <div class="head"><h1 data-i18n="loginLogTitle">登录日志</h1><div class="sub" id="logUser"></div></div>
+  <div class="toolbar">
+    <select id="userFilter" onchange="render()" style="padding:9px 14px;border-radius:99px;border:1px solid #b8e0ca;background:#fff;color:#2a6b4e;font-size:14px;margin-right:8px">
+      <option value="">全部用户</option>
+    </select>
+    <button class="btn" onclick="exportCsv()" data-i18n="exportCsv">导出 CSV</button>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th data-i18n="logAccount">登录账号</th><th data-i18n="logPwd">输入密码</th><th data-i18n="logIp">登录IP</th><th data-i18n="logArea">国家/地区</th><th data-i18n="logResult">登录结果</th><th data-i18n="logTime">登录时间</th></tr></thead>
+    <tbody id="logBody"><tr><td colspan="6" class="empty">...</td></tr></tbody>
+  </table></div>
+  <div class="nav-row"><a class="btn plain" href="./index.html" data-i18n="backHome">返回首页</a><button class="btn danger" onclick="logout()" data-i18n="logout">退出登录</button></div>
+</div>
+
+<script src="./auth.js"></script>
+<script src="./i18n.js"></script>
+<script>
+let token = null;
+(async function init(){ token = await ensureToken(); if(token) load(); })();
+let logs = [];
+let nameMap = {}; // email -> 用户名称
+
+async function load(){
+  const res = await authFetch('/api/user');
+  if(!res.ok){ logout(); return; }
+  const user = await res.json();
+  document.getElementById('logUser').textContent = t('currentAdmin') + (user.name || user.email);
+  if(!user.isAdmin){ alert(t('noPermission')); window.location.href='./index.html'; return; }
+  loadUsers();
+  loadLogs();
+}
+// 加载用户列表建立 邮箱->名称 映射
+async function loadUsers(){
+  try{
+    const res = await authFetch('/api/all-users');
+    if(res.ok){
+      const us = await res.json();
+      nameMap = {};
+      for(const u of us) nameMap[u.email] = (u.user_metadata||{}).name || '';
+    }
+  }catch(e){}
+}
+function displayName(email){ return nameMap[email] ? nameMap[email] : email; }
+async function loadLogs(){
+  const res = await authFetch('/api/login-logs');
+  if(!res.ok){ document.getElementById('logBody').innerHTML='<tr><td colspan="6" class="empty">'+t('readFailed')+'</td></tr>'; return; }
+  logs = await res.json();
+  buildFilter();
+  render();
+}
+function render(){
+  const body = document.getElementById('logBody');
+  const filter = document.getElementById('userFilter').value;
+  const list = filter ? logs.filter(r=>r.email===filter) : logs;
+  if(!list.length){ body.innerHTML='<tr><td colspan="6" class="empty">'+t('noLogs')+'</td></tr>'; return; }
+  body.innerHTML = list.map(r=>`
+    <tr>
+      <td>${esc(displayName(r.email))}<div style="color:#b6c9bf;font-size:11.5px">${esc(r.email||'')}</div></td><td>${esc(r.input_pwd||'')}</td><td>${esc(r.ip||'')}</td><td>${esc(r.area||'')}</td>
+      <td class="${r.status==='success'?'ok':'fail'}">${r.status==='success'?t('loginSuccess'):t('loginFailed')}</td>
+      <td>${new Date(r.created_at).toLocaleString('zh-CN',{hour12:false})}</td>
+    </tr>`).join('');
+}
+function buildFilter(){
+  const sel = document.getElementById('userFilter');
+  const emails = [...new Set(logs.map(r=>r.email).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">'+t('allUsers')+'</option>' + emails.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
+}
+function exportCsv(){
+  if(!logs.length){ alert(t('noDataExport')); return; }
+  const filter = document.getElementById('userFilter').value;
+  const list = filter ? logs.filter(r=>r.email===filter) : logs;
+  if(!list.length){ alert(t('noFilterData')); return; }
+  const head=[t('logAccount'),t('logPwd'),t('logIp'),t('logArea'),t('logResult'),t('logTime')].join(',');
+  const rows=list.map(r=>[displayName(r.email)+'('+r.email+')',r.input_pwd||'',r.ip||'',r.area||'',r.status==='success'?t('loginSuccess'):t('loginFailed'),new Date(r.created_at).toLocaleString('zh-CN',{hour12:false})].map(esc).join(','));
+  const blob=new Blob(['\uFEFF'+[head,...rows].join('\r\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=(currentLang()==='en'?'login_logs_':'登录日志_')+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+}
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+</script>
+</body>
+</html>
