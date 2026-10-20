@@ -116,8 +116,13 @@ function render(){
         <button class="btn small danger" onclick="delUser('${u.id}')">${t('delUser')}</button>`;
     }
     return `<tr>
-      <td>${nm}</td><td>${esc(u.email)}</td><td>${role}</td><td>${st}</td><td>${visibleLabel(u)}</td><td>${ops}</td>
-      <td>${new Date(u.created_at).toLocaleString('zh-CN',{hour12:false})}</td>
+      <td data-label="${t('userNameCol')}">${nm}</td>
+      <td data-label="${t('emailCol')}">${esc(u.email)}</td>
+      <td data-label="${t('role')}">${role}</td>
+      <td data-label="${t('status')}">${st}</td>
+      <td data-label="${t('visibleTasks')}">${visibleLabel(u)}</td>
+      <td data-label="${t('actions')}" class="ops-cell"><div class="btns">${ops}</div></td>
+      <td data-label="${t('createdAt')}">${new Date(u.created_at).toLocaleString('zh-CN',{hour12:false})}</td>
     </tr>`;
   }).join('');
 }
