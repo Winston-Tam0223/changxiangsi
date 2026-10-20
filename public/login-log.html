@@ -73,9 +73,12 @@ function render(){
   if(!list.length){ body.innerHTML='<tr><td colspan="6" class="empty">'+t('noLogs')+'</td></tr>'; return; }
   body.innerHTML = list.map(r=>`
     <tr>
-      <td>${esc(displayName(r.email))}<div style="color:#c5d8cd;font-size:11.5px">${esc(r.email||'')}</div></td><td>${esc(r.input_pwd||'')}</td><td>${esc(r.ip||'')}</td><td>${esc(r.area||'')}</td>
-      <td class="${r.status==='success'?'ok':'fail'}">${r.status==='success'?t('loginSuccess'):t('loginFailed')}</td>
-      <td>${new Date(r.created_at).toLocaleString('zh-CN',{hour12:false})}</td>
+      <td data-label="${t('logAccount')}">${esc(displayName(r.email))}<div style="color:#c5d8cd;font-size:11.5px">${esc(r.email||'')}</div></td>
+      <td data-label="${t('logPwd')}">${esc(r.input_pwd||'')}</td>
+      <td data-label="${t('logIp')}">${esc(r.ip||'')}</td>
+      <td data-label="${t('logArea')}">${esc(r.area||'')}</td>
+      <td data-label="${t('logResult')}" class="${r.status==='success'?'ok':'fail'}">${r.status==='success'?t('loginSuccess'):t('loginFailed')}</td>
+      <td data-label="${t('logTime')}">${new Date(r.created_at).toLocaleString('zh-CN',{hour12:false})}</td>
     </tr>`).join('');
 }
 function buildFilter(){
