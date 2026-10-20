@@ -295,6 +295,18 @@ html.js .reveal.in{opacity:1;transform:none}
   table{min-width:0}
   th,td{padding:9px 7px;font-size:12px;white-space:normal}
   .btn.small{padding:5px 8px;font-size:11.5px;border-radius:7px}
+  /* 手机端表格转卡片式布局：每行一张卡，字段纵向排列 */
+  .table-wrap table,.table-wrap thead,.table-wrap tbody,.table-wrap tr,.table-wrap td{display:block;width:100%;box-sizing:border-box}
+  .table-wrap thead{display:none}
+  .table-wrap tbody{display:flex;flex-direction:column;gap:12px}
+  .table-wrap tr{background:rgba(10,28,20,.55);border:1px solid var(--accent-line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+  .table-wrap td{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:2px 0;border:none;font-size:12.5px;text-align:right;line-height:1.45}
+  .table-wrap td::before{content:attr(data-label);flex:0 0 auto;color:#7f9f90;font-size:11.5px;text-align:left;margin-top:1px}
+  .table-wrap td.ops-cell{display:block;text-align:left}
+  .table-wrap td.ops-cell::before{display:block;margin-bottom:6px}
+  .table-wrap td .btns{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-start}
+  .table-wrap td .btns .btn{margin:0}
+  .table-wrap .empty{display:block;text-align:center;color:#8fb0a0;padding:20px}
 }
 /* ===== 登录页：移动端一屏全显（不滚动）===== */
 @media (max-width:640px){
