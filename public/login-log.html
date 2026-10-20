@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录日志｜长相思匹配时间发布系统</title>
+  <link rel="stylesheet" href="./ui.css">
+</head>
+<body>
+<div class="lang-bar">
+  <button type="button" id="langBtn" class="lang-btn" title="Language">🌐</button>
+  <div class="lang-menu" id="langMenu">
+    <div class="lang-opt" data-lang="zh-CN">简体中文</div>
+    <div class="lang-opt" data-lang="zh-TW">繁體中文</div>
+    <div class="lang-opt" data-lang="en">English</div>
+  </div>
+</div>
+<div class="container wide">
+  <div class="head"><h1 data-i18n="loginLogTitle">登录日志</h1><div class="sub" id="logUser"></div></div>
+  <div class="toolbar">
+    <select id="userFilter" onchange="render()" style="padding:9px 14px;border-radius:99px;border:1px solid #b8e0ca;background:#fff;color:#8fd4b2;font-size:14px;margin-right:8px">
+      <option value="">全部用户</option>
+    </select>
+    <button class="btn" onclick="exportCsv()" data-i18n="exportCsv">导出 CSV</button>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th data-i18n="logAccount">登录账号</th><th data-i18n="logPwd">输入密码</th><th data-i18n="logIp">登录IP</th><th data-i18n="logArea">国家/地区</th><th data-i18n="logResult">登录结果</th><th data-i18n="logTime">登录时间</th></tr></thead>
+    <tbody id="logBody"><tr><td colspan="6" class="empty">...</td></tr></tbody>
+  </table></div>
+  <div class="nav-row"><a class="btn plain" href="./index.html" data-i18n="backHome">返回首页</a><button class="btn danger" onclick="logout()" data-i18n="logout">退出登录</button></div>
+</div>
+
+<script src="./auth.js"></script>
+<script src="./i18n.js"></script>
+<script>
+let token = null;
+(async function init(){ token = await ensureToken(); if(token) load(); })();
+let logs = [];
+let nameMap = {}; // email -> 用户名称
+
+async function load(){
+  const res = await authFetch('/api/user');
+  if(!res.ok){ logout(); return; }
+  const user = await res.json();
+  document.getElementById('logUser').textContent = t('currentAdmin') + (user.name || user.email);
+  if(!user.isAdmin){ alert(t('noPermission')); window.location.href='./index.html'; return; }
+  loadUsers();
+  loadLogs();
+}
+// 加载用户列表建立 邮箱->名称 映射
+async function loadUsers(){
+  try{
+    const res = await authFetch('/api/all-users');
+    if(res.ok){
+      const us = await res.json();
+      nameMap = {};
+      for(const u of us) nameMap[u.email] = (u.user_metadata||{}).name || '';
+    }
+  }catch(e){}
+}
+function displayName(email){ return nameMap[email] ? nameMap[email] : email; }
+async function loadLogs(){
+  const res = await authFetch('/api/login-logs');
+  if(!res.ok){ document.getElementById('logBody').innerHTML='<tr><td colspan="6" class="empty">'+t('readFailed')+'</td></tr>'; return; }
+  logs = await res.json();
+  buildFilter();
+  render();
+}
+function render(){
+  const body = document.getElementById('logBody');
+  const filter = document.getElementById('userFilter').value;
+  const list = filter ? logs.filter(r=>r.email===filter) : logs;
+  if(!list.length){ body.innerHTML='<tr><td colspan="6" class="empty">'+t('noLogs')+'</td></tr>'; return; }
+  body.innerHTML = list.map(r=>`
+    <tr>
+      <td>${esc(displayName(r.email))}<div style="color:#c5d8cd;font-size:11.5px">${esc(r.email||'')}</div></td><td>${esc(r.input_pwd||'')}</td><td>${esc(r.ip||'')}</td><td>${esc(r.area||'')}</td>
+      <td class="${r.status==='success'?'ok':'fail'}">${r.status==='success'?t('loginSuccess'):t('loginFailed')}</td>
+      <td>${new Date(r.created_at).toLocaleString('zh-CN',{hour12:false})}</td>
+    </tr>`).join('');
+}
+function buildFilter(){
+  const sel = document.getElementById('userFilter');
+  const emails = [...new Set(logs.map(r=>r.email).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">'+t('allUsers')+'</option>' + emails.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
+}
+function exportCsv(){
+  if(!logs.length){ alert(t('noDataExport')); return; }
+  const filter = document.getElementById('userFilter').value;
+  const list = filter ? logs.filter(r=>r.email===filter) : logs;
+  if(!list.length){ alert(t('noFilterData')); return; }
+  const head=[t('logAccount'),t('logPwd'),t('logIp'),t('logArea'),t('logResult'),t('logTime')].join(',');
+  const rows=list.map(r=>[displayName(r.email)+'('+r.email+')',r.input_pwd||'',r.ip||'',r.area||'',r.status==='success'?t('loginSuccess'):t('loginFailed'),new Date(r.created_at).toLocaleString('zh-CN',{hour12:false})].map(esc).join(','));
+  const blob=new Blob(['\uFEFF'+[head,...rows].join('\r\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=(currentLang()==='en'?'login_logs_':'登录日志_')+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+}
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+</script>
+  <script src="./ui.js"></script>
+</body>
+</html>
