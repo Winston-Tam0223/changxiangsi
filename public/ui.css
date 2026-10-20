@@ -312,10 +312,10 @@ html.js .reveal.in{opacity:1;transform:none}
 @media (max-width:640px){
   body.login-page .wrap{padding:14px 16px;gap:14px}
   body.login-page .logo{margin-bottom:14px}
-  body.login-page .logo .brand-icon{width:62px;height:62px;margin-bottom:10px;border-radius:16px}
-  body.login-page .logo h1{font-size:20px;letter-spacing:1px}
-  body.login-page .logo .welcome{font-size:15px;margin-top:6px}
-  body.login-page .logo .sub{font-size:12.5px;margin-top:4px}
+  body.login-page .logo .brand-icon{width:84px;height:84px;margin-bottom:12px;border-radius:20px}
+  body.login-page .logo h1{font-size:28px;letter-spacing:1.5px}
+  body.login-page .logo .welcome{font-size:20px;margin-top:8px}
+  body.login-page .logo .sub{font-size:15px;margin-top:5px}
   body.login-page .login-card{padding:18px 20px;border-radius:20px}
   body.login-page .field{margin-bottom:10px}
   body.login-page .field label{font-size:13px;margin-bottom:5px}
