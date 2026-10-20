@@ -25,8 +25,8 @@
   <div class="login-card">
     <div class="login-msg" id="loginMsg"></div>
     <form onsubmit="return doLogin(event)">
-      <div class="field"><label data-i18n="email">邮箱地址</label><input id="email" data-i18n="emailPh" placeholder="输入账号邮箱" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')"></div>
-      <div class="field"><label data-i18n="password">密码</label><input id="pwd" data-i18n="pwdPh" type="password" placeholder="输入密码" readonly onfocus="this.removeAttribute('readonly')"></div>
+      <div class="field"><label data-i18n="email">邮箱地址</label><input id="email" data-i18n="emailPh" placeholder="输入账号邮箱" autocomplete="off" readonly></div>
+      <div class="field"><label data-i18n="password">密码</label><input id="pwd" data-i18n="pwdPh" type="password" placeholder="输入密码" readonly></div>
       <div class="opt-row">
         <label><input type="checkbox" id="rememberMe"> <span data-i18n="rememberMeShort">记住我</span></label>
         <button type="button" class="forgot" id="forgotPwd" onclick="showForgotTip()" data-i18n="forgotPwd">忘记密码？</button>
@@ -48,8 +48,16 @@
 <script src="./auth.js"></script>
 <script src="./i18n.js"></script>
 <script>
-/* 手机端打开不自动弹键盘：加载完成后收回焦点，用户点击输入框才弹出 */
+/* 手机端打开不自动弹键盘：输入框保持只读，用户手指/鼠标触碰时才解锁，自动填充的聚焦不会触发 */
 (function(){
+  ['email','pwd'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    var unlock = function(){ el.removeAttribute('readonly'); el.focus(); };
+    el.addEventListener('touchstart', unlock, {once:true});
+    el.addEventListener('mousedown', unlock, {once:true});
+  });
+  /* 兜底：加载完成后收回任何自动焦点 */
   function noAutoFocus(){
     var a = document.activeElement;
     if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) a.blur();
