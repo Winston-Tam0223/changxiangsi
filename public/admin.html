@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>任务管理｜长相思联盟匹配时间</title>
   <link rel="stylesheet" href="./ui.css?v=4">
+
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0a2e1f">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Match Time">
 </head>
 <body>
 <div class="lang-bar">
@@ -102,5 +109,9 @@ function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&
 function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2200); }
 </script>
   <script src="./ui.js?v=4"></script>
+
+<script>
+if('serviceWorker' in navigator){ window.addEventListener('load', ()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{})); }
+</script>
 </body>
 </html>
