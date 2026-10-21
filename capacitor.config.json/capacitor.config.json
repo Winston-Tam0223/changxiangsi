@@ -1,0 +1,13 @@
+{
+  "appId": "com.changxiangsi.matchtime",
+  "appName": "Match Time",
+  "webDir": "public",
+  "server": {
+    "url": "https://changxiangsi.vercel.app",
+    "iosScheme": "https"
+  },
+  "ios": {
+    "contentInset": "always",
+    "limitsNavigationsToAppBoundDomains": true
+  }
+}
