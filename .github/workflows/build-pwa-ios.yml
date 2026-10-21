@@ -1,0 +1,53 @@
+name: Build PWA iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'Match Time.zip'
+      - '.github/workflows/build-pwa-ios.yml'
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unzip PWA package
+        run: |
+          mkdir -p ios-src
+          unzip -o "Match Time.zip" -d ios-src
+          ls ios-src/src
+
+      - name: Pod install
+        working-directory: ios-src/src
+        run: |
+          pod repo update
+          pod install
+
+      - name: Build unsigned archive
+        working-directory: ios-src/src
+        run: |
+          xcodebuild archive \
+            -workspace "Match Time.xcworkspace" \
+            -scheme "Match Time" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/MatchTime.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Pack IPA
+        run: |
+          mkdir -p ipa-package/Payload
+          cp -R "ios-src/src/build/MatchTime.xcarchive/Products/Applications/Match Time.app" ipa-package/Payload/
+          cd ipa-package
+          zip -r ../MatchTime.ipa Payload
+          cd ..
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MatchTime-ipa
+          path: MatchTime.ipa
