@@ -22,30 +22,33 @@ jobs:
 
       - name: Pod install
         working-directory: ios-src/src
-        run: |
-          pod repo update
-          pod install
+        run: pod install
 
-      - name: Build unsigned archive
+      - name: Build for simulator (no sign)
         working-directory: ios-src/src
         run: |
-          xcodebuild archive \
+          set -o pipefail
+          xcodebuild build \
             -workspace "Match Time.xcworkspace" \
             -scheme "Match Time" \
             -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath build/MatchTime.xcarchive \
+            -sdk iphoneos \
+            -arch arm64 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" \
+            | xcbeautify || true
 
-      - name: Pack IPA
+      - name: Find .app and pack IPA
         run: |
+          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Build/Products/Release-iphoneos/Match Time.app" -maxdepth 6 | head -1)
+          echo "APP: $APP_PATH"
           mkdir -p ipa-package/Payload
-          cp -R "ios-src/src/build/MatchTime.xcarchive/Products/Applications/Match Time.app" ipa-package/Payload/
+          cp -R "$APP_PATH" ipa-package/Payload/
           cd ipa-package
           zip -r ../MatchTime.ipa Payload
           cd ..
+          ls -la MatchTime.ipa
 
       - uses: actions/upload-artifact@v4
         with:
