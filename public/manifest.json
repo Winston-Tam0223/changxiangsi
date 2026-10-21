@@ -1,0 +1,15 @@
+{
+  "name": "长相思联盟匹配时间",
+  "short_name": "Match Time",
+  "description": "长相思联盟匹配时间发布系统",
+  "start_url": "./login.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a2e1f",
+  "theme_color": "#0a2e1f",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
