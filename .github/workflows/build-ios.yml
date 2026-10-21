@@ -26,8 +26,8 @@ jobs:
       - name: Add iOS platform
         run: npx cap add ios || true
 
-      - name: Sync
-        run: npx cap sync ios
+      - name: Sync (ignore errors, remote URL mode)
+        run: npx cap sync ios || true
 
       - name: Build unsigned archive
         working-directory: ios/App
