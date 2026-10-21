@@ -26,13 +26,22 @@ jobs:
       - name: Add iOS platform
         run: npx cap add ios || true
 
-      - name: Sync (ignore errors, remote URL mode)
+      - name: Sync (ignore errors)
         run: npx cap sync ios || true
+
+      - name: Install Pods
+        working-directory: ios/App
+        run: pod install || true
+
+      - name: List schemes
+        working-directory: ios/App
+        run: xcodebuild -workspace App.xcworkspace -list
 
       - name: Build unsigned archive
         working-directory: ios/App
         run: |
           xcodebuild archive \
+            -workspace App.xcworkspace \
             -scheme App \
             -configuration Release \
             -destination 'generic/platform=iOS' \
