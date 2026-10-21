@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Unzip PWA package
+      - name: Unzip
         run: |
           mkdir -p ios-src
           unzip -o "Match Time.zip" -d ios-src
@@ -22,9 +22,10 @@ jobs:
         working-directory: ios-src/src
         run: pod install
 
-      - name: Build for device (no sign)
+      - name: Build
         working-directory: ios-src/src
         run: |
+          set -o pipefail
           xcodebuild build \
             -workspace "Match Time.xcworkspace" \
             -scheme "Match Time" \
@@ -33,17 +34,22 @@ jobs:
             -derivedDataPath ./build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            2>&1 | tail -50
+
+      - name: List products
+        run: ls -la ios-src/src/build/Build/Products/ || true
 
       - name: Pack IPA
         run: |
-          ls -la ios-src/src/build/Build/Products/Release-iphoneos/
+          APP=$(find ios-src/src/build -name "*.app" -type d | head -1)
+          echo "APP: $APP"
           mkdir -p ipa-package/Payload
-          cp -R "ios-src/src/build/Build/Products/Release-iphoneos/Match Time.app" ipa-package/Payload/
+          cp -R "$APP" ipa-package/Payload/
           cd ipa-package
           zip -r ../MatchTime.ipa Payload
           cd ..
-          ls -la MatchTime.ipa
 
       - uses: actions/upload-artifact@v4
         with:
