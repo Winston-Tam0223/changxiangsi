@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
@@ -21,25 +21,24 @@ jobs:
       - name: Install Capacitor
         run: |
           npm install
-          npm install --save-dev @capacitor/cli @capacitor/core @capacitor/ios
+          npm install --save-dev @capacitor/cli@latest @capacitor/core@latest @capacitor/ios@latest
 
       - name: Add iOS platform
-        run: npx cap add ios || true
+        run: npx cap add ios
 
-      - name: Sync (ignore errors)
-        run: npx cap sync ios || true
+      - name: Sync
+        run: npx cap sync ios
 
-      - name: Install Pods
-        working-directory: ios/App
-        run: pod install || true
-
-      - name: List schemes
-        working-directory: ios/App
-        run: xcodebuild -workspace App.xcworkspace -list
-
-      - name: Build unsigned archive
+      - name: Pod install
         working-directory: ios/App
         run: |
+          pod repo update
+          pod install --verbose
+
+      - name: Build archive
+        working-directory: ios/App
+        run: |
+          set -o pipefail
           xcodebuild archive \
             -workspace App.xcworkspace \
             -scheme App \
@@ -48,20 +47,17 @@ jobs:
             -archivePath build/App.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGN_ENTITLEMENTS=""
+            CODE_SIGN_IDENTITY=""
 
-      - name: Pack into .ipa
+      - name: Pack IPA
         run: |
           mkdir -p ipa-package/Payload
           cp -r ios/App/build/App.xcarchive/Products/Applications/App.app ipa-package/Payload/
           cd ipa-package
           zip -r ../MatchTime-unsigned.ipa Payload
           cd ..
-          ls -la MatchTime-unsigned.ipa
 
-      - name: Upload IPA
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: MatchTime-unsigned-ipa
           path: MatchTime-unsigned.ipa
