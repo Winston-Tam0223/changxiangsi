@@ -18,10 +18,11 @@
 <div class="container wide">
   <div class="head"><h1 data-i18n="loginLogTitle">登录日志</h1><div class="sub" id="logUser"></div></div>
   <div class="toolbar">
-    <select id="userFilter" onchange="render()" style="padding:9px 14px;border-radius:99px;border:1px solid #b8e0ca;background:#fff;color:#8fd4b2;font-size:14px;margin-right:8px">
+    <select id="userFilter" onchange="onFilterChange()" style="padding:9px 14px;border-radius:99px;border:1px solid #b8e0ca;background:#fff;color:#8fd4b2;font-size:14px;margin-right:8px">
       <option value="">全部用户</option>
     </select>
     <button class="btn" onclick="exportCsv()" data-i18n="exportCsv">导出 CSV</button>
+    <button class="btn danger" id="delUserBtn" style="display:none" onclick="deleteUserLogs()" data-i18n="deleteUserLogs">删除该用户全部日志</button>
   </div>
   <div class="table-wrap"><table>
     <thead><tr><th data-i18n="logAccount">登录账号</th><th data-i18n="logPwd">输入密码</th><th data-i18n="logIp">登录IP</th><th data-i18n="logArea">国家/地区</th><th data-i18n="logResult">登录结果</th><th data-i18n="logTime">登录时间</th><th data-i18n="logAction">操作</th></tr></thead>
@@ -109,6 +110,27 @@ function buildFilter(){
   const sel = document.getElementById('userFilter');
   const emails = [...new Set(logs.map(r=>r.email).filter(Boolean))].sort();
   sel.innerHTML = '<option value="">'+t('allUsers')+'</option>' + emails.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
+}
+function onFilterChange(){
+  const f = document.getElementById('userFilter').value;
+  document.getElementById('delUserBtn').style.display = f ? '' : 'none';
+  render();
+}
+async function deleteUserLogs(){
+  const email = document.getElementById('userFilter').value;
+  if(!email){ alert(t('pleaseSelectUser')); return; }
+  if(!confirm(t('confirmDeleteUserLogs', {email}))) return;
+  const res = await authFetch('/api/login-logs?email=' + encodeURIComponent(email), { method:'DELETE' });
+  if(res.ok){
+    logs = logs.filter(r=>r.email !== email);
+    document.getElementById('userFilter').value = '';
+    document.getElementById('delUserBtn').style.display = 'none';
+    buildFilter();
+    render();
+    alert(t('deleteUserLogsDone'));
+  } else {
+    alert(t('deleteFailed'));
+  }
 }
 function exportCsv(){
   if(!logs.length){ alert(t('noDataExport')); return; }
