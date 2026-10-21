@@ -278,6 +278,13 @@ app.get('/api/login-logs', authMiddleware, async (req, res) => {
   res.json(data);
 });
 
+app.delete('/api/login-logs/:id', authMiddleware, async (req, res) => {
+  if (!isAdmin(req.user)) return res.status(403).json({ error: '无权限' });
+  const { error } = await supabaseAdmin.from('login_logs').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
 // 首页
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 
